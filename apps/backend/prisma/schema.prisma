@@ -1,0 +1,232 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== Core Entities =====
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ratings    Rating[]
+  links      Link[]
+  activities Activity[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+enum MediaType {
+  BOOK
+  MOVIE
+  SHOW
+  MANGA
+  COMIC
+  ARTIST
+  ALBUM
+  GAME
+  PODCAST
+}
+
+model MediaItem {
+  id          String    @id @default(cuid())
+  type        MediaType
+  title       String
+  subtitle    String?
+  description String?   @db.Text
+  year        Int?
+  coverUrl    String?
+  externalIds Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  creators       MediaItemCreator[]
+  tags           MediaItemTag[]
+  ratings        Rating[]
+  linksFrom      Link[]             @relation("LinkFrom")
+  linksTo        Link[]             @relation("LinkTo")
+  searchIndex    MediaSearchIndex?
+
+  @@index([type])
+  @@index([title])
+  @@index([year])
+  @@map("media_items")
+}
+
+model Creator {
+  id        String   @id @default(cuid())
+  name      String
+  aliases   String[]
+  bio       String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mediaItems MediaItemCreator[]
+
+  @@index([name])
+  @@map("creators")
+}
+
+enum CreatorRole {
+  AUTHOR
+  DIRECTOR
+  ARTIST
+  ACTOR
+  MUSICIAN
+  ILLUSTRATOR
+  WRITER
+  PRODUCER
+  OTHER
+}
+
+model MediaItemCreator {
+  mediaItemId String
+  creatorId   String
+  role        CreatorRole
+  createdAt   DateTime    @default(now())
+
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  creator   Creator   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@id([mediaItemId, creatorId, role])
+  @@index([creatorId])
+  @@map("media_item_creators")
+}
+
+model Rating {
+  id          String   @id @default(cuid())
+  userId      String
+  mediaItemId String
+  score       Int // 1-10
+  reviewText  String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mediaItemId])
+  @@index([mediaItemId])
+  @@index([userId])
+  @@index([score])
+  @@map("ratings")
+}
+
+enum LinkType {
+  VIBE
+  THEME
+  TONE
+  GENRE
+  AESTHETIC
+  OTHER
+}
+
+model Link {
+  id          String   @id @default(cuid())
+  fromMediaId String
+  toMediaId   String
+  userId      String
+  linkType    LinkType
+  strength    Float    @default(0.5) // 0-1
+  note        String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  fromMedia MediaItem @relation("LinkFrom", fields: [fromMediaId], references: [id], onDelete: Cascade)
+  toMedia   MediaItem @relation("LinkTo", fields: [toMediaId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([fromMediaId, toMediaId, userId])
+  @@index([fromMediaId])
+  @@index([toMediaId])
+  @@index([userId])
+  @@index([linkType])
+  @@map("links")
+}
+
+enum TagKind {
+  GENRE
+  MOOD
+  TOPIC
+  STYLE
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  kind      TagKind?
+  createdAt DateTime @default(now())
+
+  mediaItems MediaItemTag[]
+
+  @@index([name])
+  @@index([kind])
+  @@map("tags")
+}
+
+model MediaItemTag {
+  mediaItemId String
+  tagId       String
+  createdAt   DateTime @default(now())
+
+  mediaItem MediaItem @relation(fields: [mediaItemId], references: [id], onDelete: Cascade)
+  tag       Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([mediaItemId, tagId])
+  @@index([tagId])
+  @@map("media_item_tags")
+}
+
+enum ActivityKind {
+  RATE
+  LINK
+  ADD
+  EDIT
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  userId    String
+  kind      ActivityKind
+  refId     String // ID of the related entity (rating, link, media item, etc.)
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([kind])
+  @@index([createdAt])
+  @@map("activities")
+}
+
+// ===== Search Index Cache =====
+// Stores denormalized search data for fast querying
+model MediaSearchIndex {
+  id            String   @id
+  title         String
+  type          String
+  creatorNames  String[]
+  tagNames      String[]
+  year          Int?
+  averageRating Float?
+  ratingsCount  Int      @default(0)
+  updatedAt     DateTime @updatedAt
+
+  mediaItem MediaItem @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@index([title])
+  @@index([type])
+  @@index([averageRating])
+  @@map("media_search_index")
+}
