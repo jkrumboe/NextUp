@@ -15,25 +15,22 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('Logged');
   const { data } = useMediaQuery({ limit: 10 });
 
-  // Redirect to login if not authenticated
+  // Redirect to login immediately if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/auth/login');
+      router.replace('/auth/login');
     }
   }, [isAuthenticated, isLoading]);
 
-  // Show loading state while checking auth
-  if (isLoading) {
+  // Don't render anything if not authenticated
+  if (!isAuthenticated || isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <Text style={{ color: '#fff' }}>Loading...</Text>
-      </View>
+      <LinearGradient colors={['#0a0a0f', '#1a1a2e', '#16213e']} style={styles.container}>
+        <View style={styles.centerContent}>
+          <Text style={{ color: '#fff' }}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
-  }
-
-  // Show nothing if not authenticated (will redirect)
-  if (!isAuthenticated) {
-    return null;
   }
 
   const favoriteVibes = ['Surreal', 'Atmospheric', 'Emotional', 'Mind-bending', 'Cyberpunk'];

@@ -38,14 +38,13 @@ export type ActivityKind = z.infer<typeof ActivityKindEnum>;
 
 // ===== Auth Schemas =====
 export const RegisterSchema = z.object({
-  email: z.string().email(),
   username: z.string().min(3).max(30),
   password: z.string().min(8),
 });
 export type RegisterDto = z.infer<typeof RegisterSchema>;
 
 export const LoginSchema = z.object({
-  email: z.string().email(),
+  username: z.string().min(3).max(30),
   password: z.string(),
 });
 export type LoginDto = z.infer<typeof LoginSchema>;
