@@ -1,6 +1,6 @@
 {
   "name": "vibelink-monorepo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "VibeLink - Community-driven suggestion platform",
   "engines": {
@@ -21,6 +21,10 @@
     "db:migrate": "cd apps/backend && pnpm db:migrate",
     "db:seed": "cd apps/backend && pnpm db:seed",
     "db:studio": "cd apps/backend && pnpm db:studio",
+    "version:bump": "node scripts/bump-version.js",
+    "version:major": "node scripts/bump-version.js major",
+    "version:minor": "node scripts/bump-version.js minor",
+    "version:patch": "node scripts/bump-version.js patch",
     "prepare": "husky install"
   },
   "devDependencies": {

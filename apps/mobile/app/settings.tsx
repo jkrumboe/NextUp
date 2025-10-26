@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
@@ -7,6 +8,8 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Modal } from 're
 export default function SettingsScreen() {
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
+
+  const appVersion = Constants.expoConfig?.version || '1.0.0';
 
   const handleLogout = () => {
     // Logic for logging out
@@ -260,7 +263,7 @@ export default function SettingsScreen() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>VibeLink v1.0.0</Text>
+            <Text style={styles.footerText}>VibeLink v{appVersion}</Text>
             <Text style={styles.footerText}>Made with ❤️ for discovery</Text>
           </View>
         </ScrollView>
