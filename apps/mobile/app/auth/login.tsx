@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { LoginSchema, type LoginDto } from '@vibelink/types';
+import { LoginSchema, RegisterSchema, type LoginDto, type RegisterDto } from '@vibelink/types';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -13,35 +13,101 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/features/auth/useAuth';
 
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, register } = useAuth();
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRegisterMode, setIsRegisterMode] = useState(false);
+  const [confirmPasswordHeight] = useState(new Animated.Value(0));
+  const [confirmPasswordTranslateY] = useState(new Animated.Value(-80));
+  const [forgotPasswordOpacity] = useState(new Animated.Value(1));
 
   const {
     control,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginDto>({
-    resolver: zodResolver(LoginSchema),
+    reset,
+  } = useForm<LoginDto | RegisterDto>({
+    resolver: zodResolver(isRegisterMode ? RegisterSchema : LoginSchema),
     defaultValues: {
       username: '',
       password: '',
     },
   });
 
-  const onSubmit = async (data: LoginDto) => {
+  const toggleMode = () => {
+    setIsRegisterMode(!isRegisterMode);
+    setError('');
+    reset();
+
+    if (!isRegisterMode) {
+      // Switching to register mode
+      // Fade out forgot password first (with delay), then slide in confirm password from top
+      Animated.sequence([
+        Animated.timing(forgotPasswordOpacity, {
+          toValue: 0,
+          duration: 300,
+          delay: 200,
+          useNativeDriver: false,
+        }),
+        Animated.parallel([
+          Animated.timing(confirmPasswordHeight, {
+            toValue: 80,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+          Animated.timing(confirmPasswordTranslateY, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+        ]),
+      ]).start();
+    } else {
+      // Switching to login mode
+      // Slide out confirm password to top first, then fade in forgot password
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(confirmPasswordHeight, {
+            toValue: 0,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+          Animated.timing(confirmPasswordTranslateY, {
+            toValue: -80,
+            duration: 500,
+            useNativeDriver: false,
+          }),
+        ]),
+        Animated.timing(forgotPasswordOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false,
+        }),
+      ]).start();
+    }
+  };
+
+  const onSubmit = async (data: LoginDto | RegisterDto) => {
     try {
       setError('');
-      await login(data);
+      if (isRegisterMode) {
+        await register(data as RegisterDto);
+      } else {
+        await login(data as LoginDto);
+      }
       router.replace('/(tabs)');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(
+        err instanceof Error ? err.message : isRegisterMode ? 'Registration failed' : 'Login failed'
+      );
     }
   };
 
@@ -64,8 +130,12 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Header */}
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Continue your discovery journey</Text>
+            <Text style={styles.title}>{isRegisterMode ? 'Join VibeLink' : 'Welcome Back'}</Text>
+            <Text style={styles.subtitle}>
+              {isRegisterMode
+                ? 'Discover your next favorite vibe'
+                : 'Continue your discovery journey'}
+            </Text>
 
             {/* Card Container */}
             <View style={styles.card}>
@@ -137,24 +207,84 @@ export default function LoginScreen() {
                   )}
                 />
                 {errors.password && <Text style={styles.errorText}>{errors.password.message}</Text>}
+
+                {/* Confirm Password Field - Animated - Nested to appear from password */}
+                <Animated.View
+                  style={{
+                    height: confirmPasswordHeight,
+                    transform: [{ translateY: confirmPasswordTranslateY }],
+                    overflow: 'hidden',
+                  }}
+                >
+                  <View style={{ marginTop: 10 }}>
+                    <Text style={styles.label}>Confirm Password</Text>
+                    <Controller
+                      control={control}
+                      name="password"
+                      render={({ field: { value } }) => (
+                        <View style={styles.inputWrapper}>
+                          <Ionicons
+                            name="lock-closed-outline"
+                            size={20}
+                            color="#9ca3af"
+                            style={styles.icon}
+                          />
+                          <TextInput
+                            placeholder="Confirm your password"
+                            placeholderTextColor="#6b7280"
+                            value={value}
+                            secureTextEntry={!showConfirmPassword}
+                            autoCapitalize="none"
+                            style={styles.input}
+                            editable={false}
+                          />
+                          <TouchableOpacity
+                            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                            style={styles.eyeIcon}
+                          >
+                            <Ionicons
+                              name={showConfirmPassword ? 'eye-outline' : 'eye-off-outline'}
+                              size={20}
+                              color="#9ca3af"
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      )}
+                    />
+                  </View>
+                </Animated.View>
               </View>
 
-              {/* Forgot Password */}
-              <TouchableOpacity style={styles.forgotPassword}>
-                <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-              </TouchableOpacity>
+              {/* Forgot Password - Only show in login mode with fade animation */}
+              <Animated.View
+                style={{
+                  opacity: forgotPasswordOpacity,
+                  height: isRegisterMode ? 0 : 'auto',
+                  overflow: 'hidden',
+                }}
+              >
+                <TouchableOpacity style={styles.forgotPassword}>
+                  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                </TouchableOpacity>
+              </Animated.View>
 
               {/* Error Message */}
               {error && <Text style={styles.errorMessage}>{error}</Text>}
 
-              {/* Sign In Button */}
+              {/* Sign In/Create Account Button */}
               <TouchableOpacity
                 style={[styles.signInButton, isSubmitting && styles.signInButtonDisabled]}
                 onPress={handleSubmit(onSubmit)}
                 disabled={isSubmitting}
               >
                 <Text style={styles.signInButtonText}>
-                  {isSubmitting ? 'Signing in...' : 'Sign In'}
+                  {isSubmitting
+                    ? isRegisterMode
+                      ? 'Creating Account...'
+                      : 'Signing in...'
+                    : isRegisterMode
+                      ? 'Create Account'
+                      : 'Sign In'}
                 </Text>
               </TouchableOpacity>
 
@@ -176,11 +306,13 @@ export default function LoginScreen() {
                 <Text style={styles.socialButtonText}>Continue with Apple</Text>
               </TouchableOpacity>
 
-              {/* Sign Up Link */}
+              {/* Sign Up/Sign In Toggle Link */}
               <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>Don't have an account? </Text>
-                <TouchableOpacity onPress={() => router.push('/auth/register')}>
-                  <Text style={styles.signUpLink}>Sign Up</Text>
+                <Text style={styles.signUpText}>
+                  {isRegisterMode ? 'Already have an account? ' : "Don't have an account? "}
+                </Text>
+                <TouchableOpacity onPress={toggleMode}>
+                  <Text style={styles.signUpLink}>{isRegisterMode ? 'Sign In' : 'Sign Up'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -213,7 +345,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 60,
     paddingBottom: 40,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
   },
   backButton: {
     position: 'absolute',
