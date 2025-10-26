@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 
 import { MediaCardGrid } from '@/components/MediaCardGrid';
@@ -11,9 +11,30 @@ import { useMediaQuery } from '@/features/media/useMediaQuery';
 type TabType = 'Logged' | 'Links' | 'Activity';
 
 export default function ProfileScreen() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('Logged');
   const { data } = useMediaQuery({ limit: 10 });
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={{ color: '#fff' }}>Loading...</Text>
+      </View>
+    );
+  }
+
+  // Show nothing if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const favoriteVibes = ['Surreal', 'Atmospheric', 'Emotional', 'Mind-bending', 'Cyberpunk'];
 
@@ -276,5 +297,9 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 100,
+  },
+  centerContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

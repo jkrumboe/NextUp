@@ -1,8 +1,33 @@
 import axios, { AxiosError } from 'axios';
 import Constants from 'expo-constants';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 const apiUrl = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3000/api';
+
+// Helper functions for secure storage that work on web too
+const getItem = async (key: string): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    return localStorage.getItem(key);
+  }
+  return await SecureStore.getItemAsync(key);
+};
+
+const setItem = async (key: string, value: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    localStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+};
+
+const deleteItem = async (key: string): Promise<void> => {
+  if (Platform.OS === 'web') {
+    localStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+};
 
 export const api = axios.create({
   baseURL: apiUrl,
@@ -14,7 +39,7 @@ export const api = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   async (config) => {
-    const token = await SecureStore.getItemAsync('accessToken');
+    const token = await getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,18 +58,18 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        const refreshToken = await SecureStore.getItemAsync('refreshToken');
+        const refreshToken = await getItem('refreshToken');
         if (!refreshToken) throw new Error('No refresh token');
 
         const { data } = await axios.post(`${apiUrl}/auth/refresh`, { refreshToken });
-        await SecureStore.setItemAsync('accessToken', data.accessToken);
+        await setItem('accessToken', data.accessToken);
 
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         // Clear tokens and redirect to login
-        await SecureStore.deleteItemAsync('accessToken');
-        await SecureStore.deleteItemAsync('refreshToken');
+        await deleteItem('accessToken');
+        await deleteItem('refreshToken');
         return Promise.reject(refreshError);
       }
     }

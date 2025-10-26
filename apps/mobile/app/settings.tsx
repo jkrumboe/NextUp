@@ -5,15 +5,23 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Modal } from 'react-native';
 
+import { useAuth } from '@/features/auth/useAuth';
+
 export default function SettingsScreen() {
+  const { logout, user } = useAuth();
   const [isLogoutModalVisible, setLogoutModalVisible] = useState(false);
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
 
   const appVersion = Constants.expoConfig?.version || '1.0.0';
 
-  const handleLogout = () => {
-    // Logic for logging out
-    setLogoutModalVisible(false);
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLogoutModalVisible(false);
+      router.replace('/auth/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -40,7 +48,7 @@ export default function SettingsScreen() {
               <View style={styles.row}>
                 <Ionicons name="person-circle" size={24} color="#fff" style={styles.icon} />
                 <View style={styles.rowContent}>
-                  <Text style={styles.rowTitle}>@vibeseeker</Text>
+                  <Text style={styles.rowTitle}>@{user?.username || 'user'}</Text>
                   <Text style={styles.rowSubtitle}>Change profile photo</Text>
                 </View>
               </View>
@@ -55,7 +63,7 @@ export default function SettingsScreen() {
                 <Ionicons name="mail" size={24} color="#fff" style={styles.icon} />
                 <View style={styles.rowContent}>
                   <Text style={styles.rowTitle}>Email</Text>
-                  <Text style={styles.rowSubtitle}>user@example.com</Text>
+                  <Text style={styles.rowSubtitle}>{user?.email || 'user@example.com'}</Text>
                 </View>
               </View>
               <View style={styles.row}>
