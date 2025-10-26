@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Pressable } from 'react-native';
 
@@ -36,7 +37,7 @@ export default function ProfileScreen() {
           end={{ x: 1, y: 1 }}
         >
           {/* Settings Icon */}
-          <Pressable style={styles.settingsButton}>
+          <Pressable style={styles.settingsButton} onPress={() => router.push('/settings')}>
             <Ionicons name="settings-outline" size={24} color="#fff" />
           </Pressable>
 

@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 
 export default function TabsLayout() {
   return (
@@ -41,7 +41,7 @@ export default function TabsLayout() {
         name="add"
         options={{
           title: '',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: () => (
             <View style={styles.addButton}>
               <Ionicons name="add" size={28} color="#fff" />
             </View>
