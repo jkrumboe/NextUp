@@ -13,7 +13,7 @@ export default function TabsLayout() {
           backgroundColor: '#0a0a0f',
           borderTopColor: 'rgba(138, 43, 226, 0.2)',
           borderTopWidth: 1,
-          height: 70,
+          height: 85,
           paddingBottom: 10,
           paddingTop: 10,
         },
@@ -68,13 +68,13 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   addButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 80,
+    height: 60,
+    borderRadius: 20,
     backgroundColor: '#8a2be2',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -20,
+    marginTop: -40,
     shadowColor: '#8a2be2',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
