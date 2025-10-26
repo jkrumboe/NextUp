@@ -1,6 +1,6 @@
 {
   "name": "vibelink-monorepo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "VibeLink - Community-driven suggestion platform",
   "engines": {
